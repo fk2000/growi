@@ -10,6 +10,7 @@ import CustomBotWithoutProxySettings from './CustomBotWithoutProxySettings';
 import CustomBotWithProxySettings from './CustomBotWithProxySettings';
 import ConfirmBotChangeModal from './ConfirmBotChangeModal';
 import BotTypeCard from './BotTypeCard';
+import DeleteSlackBotSettingsModal from './DeleteSlackBotSettingsModal';
 
 const botTypes = ['officialBot', 'customBotWithoutProxy', 'customBotWithProxy'];
 
@@ -25,6 +26,7 @@ const SlackIntegration = (props) => {
   const [isRegisterSlackCredentials, setIsRegisterSlackCredentials] = useState(false);
   const [isSendTestMessage, setIsSendTestMessage] = useState(false);
   const [slackWSNameInWithoutProxy, setSlackWSNameInWithoutProxy] = useState(null);
+  const [isDeleteConfirmModalShown, setIsDeleteConfirmModalShown] = useState(false);
 
   const fetchSlackIntegrationData = useCallback(async() => {
     try {
@@ -47,8 +49,18 @@ const SlackIntegration = (props) => {
     catch (err) {
       toastError(err);
     }
-  }, [appContainer.apiv3, currentBotType]);
+  }, [appContainer.apiv3]);
 
+  const resetWithOutSettings = async() => {
+    try {
+      await appContainer.apiv3.put('/slack-integration-settings/bot-type', { currentBotType: 'customBotWithoutProxy' });
+      fetchSlackIntegrationData();
+      toastSuccess(t('admin:slack_integration.bot_reset_successful'));
+    }
+    catch (error) {
+      toastError(error);
+    }
+  };
 
   useEffect(() => {
     fetchSlackIntegrationData();
@@ -76,12 +88,12 @@ const SlackIntegration = (props) => {
       });
       setCurrentBotType(res.data.slackBotTypeParam.slackBotType);
       setSelectedBotType(null);
-      toastSuccess(t('admin:slack_integration.bot_reset_successful'));
       setIsRegisterSlackCredentials(false);
       setSlackSigningSecret(null);
       setSlackBotToken(null);
       setIsSendTestMessage(false);
       setSlackWSNameInWithoutProxy(null);
+      toastSuccess(t('admin:slack_integration.bot_reset_successful'));
     }
     catch (err) {
       toastError(err);
@@ -107,6 +119,7 @@ const SlackIntegration = (props) => {
           onSetSlackSigningSecret={setSlackSigningSecret}
           onSetSlackBotToken={setSlackBotToken}
           onSetIsSendTestMessage={setIsSendTestMessage}
+          onResetSettings={resetWithOutSettings}
           fetchSlackIntegrationData={fetchSlackIntegrationData}
         />
       );
@@ -124,6 +137,13 @@ const SlackIntegration = (props) => {
         onCancelClick={cancelBotChangeHandler}
       />
 
+      {/* TODO add onClickDeleteButton */}
+      <DeleteSlackBotSettingsModal
+        isResetAll
+        isOpen={isDeleteConfirmModalShown}
+        onClose={() => setIsDeleteConfirmModalShown(false)}
+      />
+
       <div className="selecting-bot-type mb-5">
         <h2 className="admin-setting-header mb-4">
           {t('admin:slack_integration.selecting_bot_types.slack_bot')}
@@ -134,7 +154,20 @@ const SlackIntegration = (props) => {
           </a>
         </h2>
 
-        {t('admin:slack_integration.selecting_bot_types.selecting_bot_type')}
+        <div className="d-flex justify-content">
+          <div className="mr-auto">
+            {t('admin:slack_integration.selecting_bot_types.selecting_bot_type')}
+          </div>
+
+          {(currentBotType === 'officialBot' || currentBotType === 'customBotWithProxy') && (
+            <button
+              className="mx-3 btn btn-outline-danger flex-end"
+              type="button"
+              onClick={() => setIsDeleteConfirmModalShown(true)}
+            >{t('admin:slack_integration.reset_all_settings')}
+            </button>
+          )}
+        </div>
 
         <div className="row my-5 flex-wrap-reverse justify-content-center">
           {botTypes.map((botType) => {
