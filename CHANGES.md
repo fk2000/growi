@@ -2,7 +2,8 @@
 
 ## v4.2.19-RC
 
-* 
+* Support: Upgrade libs
+    * nodemailer
 
 ## v4.2.18
 
